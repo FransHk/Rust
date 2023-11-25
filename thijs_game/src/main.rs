@@ -1,15 +1,14 @@
 use rand::Rng;
 
 fn main() {
-    
-    println!("Hello, world!");
-    let game_set = init(3, 14, 3, 2);
+    let game_set = init(2, 14, 3, 2);
     let (players, game) = instantiate_players(game_set, 2);
-    debug_game(&game);
+    debug_game(&game, &players);
 }
 
 // Print game, console friendly
-fn debug_game(game_set: &Game) {
+fn debug_game(game_set: &Game, players: &Vec<Player>) {
+   println!("---------------------------------");    
    println!("Debugging game with {} players and {} max turns", &game_set.player_num, &game_set.max_turns);
    println!("Cards still in the current game pool (not drawn): {:?}", game_set.pool);
    
@@ -23,6 +22,9 @@ fn debug_game(game_set: &Game) {
         _ =>  println!("{}", element.to_string()), 
    }};
 
+   for element in players {
+    println!("Player: {} has card {}", element.id, element.card);
+   }
 
 }
 
@@ -37,13 +39,13 @@ fn instantiate_players(mut game_set: Game, amount: i8) -> (Vec<Player>, Game){
         let index = rand::thread_rng().gen_range(0..game_set.pool.len());
         let drawn_element = game_set.pool.remove(index);
 
-        players.push(Player{card: drawn_element, is_bot: bot});
+        players.push(Player{card: drawn_element, is_bot: bot, id: i});
         println!("Card drawn for player {}: {}, is_bot: {}", i, drawn_element, bot);
 
         bot = true; // ensure all but first player are set to be bots
     }
 
-    println!("Pool after drawing cards: {:?}", game_set.pool);
+    //println!("Pool after drawing cards: {:?}", game_set.pool);
     (players, game_set)
 }
 
@@ -52,6 +54,7 @@ fn game_loop(game_set: &Game) {
 }
 
 struct Player {
+    id: i8,
     card: i8,
     is_bot: bool,
 }
