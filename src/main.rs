@@ -37,39 +37,51 @@ fn new_game() {
 
 fn game_loop(game_set: &Game) {
    let mut pos: u8 = 0;
+   let mut card: u8 = 0;
 
-   let mut player_guess: u8 = 0;
+   let mut player_card_guess: u8 = 0;
+   let mut player_pos_guess: u8 = 0;
    let mut actual_pos: u8 = 0;
+   let mut actual_card: u8 = 0;
    let mut player_card: String = "".to_string();
 
    for player in &game_set.players {
+        let card_name: String;
+
         if player.is_player {
             // do AI input
-            pos = perform_player_turn(game_set, player.id);
-            player_guess = pos;
+            (pos, card) = perform_player_turn(game_set, player.id);
+            player_pos_guess = pos;
+            player_card_guess = card;
+            
+            
+            actual_card = player.card;
             actual_pos = get_order_pos(game_set, player.id);
             player_card = get_card_name(player.card);
          
+            card_name = "?".to_string();
         }
         else {
             // do player input 
             pos = perform_ai_turn(game_set, player.id);
+            card_name = get_card_name(game_set.players[player.id as usize].card);
             sleep(game_set.agent_turn_delay);
         }
  
-        let card_name = get_card_name(game_set.players[player.id as usize].card);
+ 
+        
         println!("Player {} with card: [{}]: I think I am in place: {}", player.id, card_name, pos);
 
     }
-    let correct: bool = player_guess == actual_pos;
+    let correct: bool = player_pos_guess == actual_pos && player_card_guess == actual_card;
     match correct {
-        true => println!("Congratulations, you guessed correctly. Your position was: {} and your card: {}", actual_pos, player_card),
-        false => println!("You messed up bruv, you guessed: {}, actual position was: {} with card: {}", player_guess, actual_pos, player_card),
+        true => println!("**** Congratulations, you guessed correctly. Your position is: {} and your card: {} ****", actual_pos, player_card),
+        false => println!("**** You lost. You guessed card {} and position: {}, actual card: {} with position: {}", player_card_guess, player_pos_guess, actual_card, actual_pos),
     }
     
     sleep(2000);
     new_game();
-    // println!("Game concluded, player guessed pos: {}, actual pos: {} for card: {}", player_guess, actual_pos, player_card);
+    // println!("Game concluded, player guessed pos: {}, actual pos: {} for card: {}", player_pos_guess, actual_pos, player_card);
     
 }
 
@@ -89,22 +101,22 @@ fn perform_player_turn(game_set: &Game, player_id: u8) -> (u8, u8) {
     let mut line = String::new();
     let mut line_2 : String = String::new();
     println!("Player {}, what is your card number (Ace=14, King=13, Queen=12, Jack=11, ..)", player_id);
-    let card_num_in = std::io::stdin().read_line(&mut line).unwrap();
+    let _card_num_in = std::io::stdin().read_line(&mut line).unwrap();
     println!("And what is your global position between {} and {}", 1, game_set.player_num);
-    let card_num_in_2 = std::io::stdin().read_line(&mut line_2).unwrap();
+    let _card_num_in_2 = std::io::stdin().read_line(&mut line_2).unwrap();
     
     let trimmed_in = line.trim();
     let trimmed_in_2 = line_2.trim();
 
     let is_numeric = trimmed_in.parse::<i32>().is_ok() && trimmed_in_2.parse::<i32>().is_ok();
     if is_numeric {
-        let pos_numeric: u8 = trimmed_in.parse::<u8>().expect("Failed to parse input");
-        let card_numeric: u8 = trimmed_in_2.parse::<u8>().expect("Failed to parse input");
+        let card_numeric: u8 = trimmed_in.parse::<u8>().expect("Failed to parse input");
+        let pos_numeric: u8 = trimmed_in_2.parse::<u8>().expect("Failed to parse input");
         (pos_numeric, card_numeric)
     }
     else {
         // Not numeric, recurisvely prompt user again
-        return perform_player_turn(game_set, player_id);
+        perform_player_turn(game_set, player_id)
     }
 }
 
@@ -162,9 +174,9 @@ fn instantiate_players(mut game_set: Game, amount: u8) -> Game {
             println!("Card drawn for player: ???")
         }        
 
-    }
+   }
     game_set.players = players;
-    game_set.player_num = players.len();
+    game_set.player_num = game_set.players.len() as u8; //players.len() as u8;
     game_set
 }
 
