@@ -20,8 +20,7 @@ struct Game {
 fn new_game() -> Game {
     println!("\n");
     println!("-------- NEW GAME ----------");
-    let mut game = init(5, 14, 8, 1, 3000); // Init initial game settings 
-    game
+    init(5, 14, 8, 1, 3000) // Init initial game settings 
 }
 
 fn main() {
@@ -39,7 +38,17 @@ impl Game {
     fn print_cards(&self) {
         for i in 0..self.player_num {
             let player: &Player = &self.players[i as usize];
-            println!("Player: {} drew card: {}", player.id, self.get_card_name(player.card));
+            let mut card_name: String;
+
+            // Obfuscate player card to make the game more interesting
+            if player.is_player {
+                card_name = "?".to_string();
+            }
+            else {
+                card_name = self.get_card_name(player.card);
+            }
+            println!("Player: {} drew card: {}", player.id, card_name);
+            
         }
     }
 
@@ -195,6 +204,7 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_dela
     }
     game_set.players = players;
     game_set.player_num = game_set.players.len() as u8;
+
 
 
     game_set
