@@ -17,7 +17,7 @@ struct Game {
 
 fn main() {
     println!("-------- DRAWING CARDS ----------");
-    let game_set = init(2, 14, 3, 2); // Init initial game settings 
+    let game_set = init(6, 14, 8, 2); // Init initial game settings 
     // debug_game(&game_set); // Debug current game properties
     println!("-----------------------------");
     game_loop(&game_set); 
@@ -157,7 +157,7 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8) -> Game {
         players: Vec::<Player>::new(), // TODO figure out if this is OK?
     };
 
-    game_set = instantiate_players(game_set, 2); // Update by adding players to game
+    game_set = instantiate_players(game_set, player_num); // Update by adding players to game
     game_set   
 }
 
