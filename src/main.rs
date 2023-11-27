@@ -21,11 +21,12 @@ fn new_game() -> Game {
     println!("\n");
     println!("-------- NEW GAME ----------");
     let mut game = init(5, 14, 8, 1, 3000); // Init initial game settings 
-    return game;
+    game
 }
 
 fn main() {
     let mut game_set: Game = new_game();
+    game_set.game_loop();
 }
 
 fn sleep(duration: u64)
@@ -35,8 +36,15 @@ fn sleep(duration: u64)
 
 impl Game {
 
+    fn print_cards(&self) {
+        for i in 0..self.player_num {
+            let player: &Player = &self.players[i as usize];
+            println!("Player: {} drew card: {}", player.id, self.get_card_name(player.card));
+        }
+    }
+
  // ALlow player to guess its own position
-    fn perform_player_turn(self, player_num: u8, player_id: u8) -> (u8, u8) {
+    fn perform_player_turn(&self, player_num: u8, player_id: u8) -> (u8, u8) {
         let mut line = String::new();
         let mut line_2 : String = String::new();
         println!("Player {}, what is your card number (Ace=14, King=13, Queen=12, Jack=11, ..)", player_id);
@@ -59,7 +67,7 @@ impl Game {
         }
     }
 
-   fn game_loop(self) {
+   fn game_loop(&mut self) {
         let mut pos: u8 = 0;
         let mut card: u8 = 0;
 
@@ -69,7 +77,10 @@ impl Game {
         let mut actual_card: u8 = 0;
         let mut player_card: String = "".to_string();
 
-        for player in &self.players {
+        self.print_cards();
+        //for player in &self.players {
+        for i in 0..self.players.len() {
+                let player = &self.players[i];
                 let card_name: String;
 
                 if player.is_player {
@@ -107,7 +118,7 @@ impl Game {
 }
 
     // Get the position that a Player is in.
-    fn get_order_pos(self, player_id: u8) -> u8{
+    fn get_order_pos(&self, player_id: u8) -> u8{
         let mut pos: u8 = 1;
         for element in &self.players {
             if element.card > self.players[player_id as usize].card {
@@ -118,13 +129,13 @@ impl Game {
     }
 
     // Return position that AI thinks it is in
-    fn perform_ai_turn(self, player_id: u8) -> u8 {
+    fn perform_ai_turn(&self, player_id: u8) -> u8 {
         let pos: u8 = self.get_order_pos(player_id);
         pos
     }
 
     // Given card ID, return its console-friendly name
-    fn get_card_name(self, card_id: u8) -> String {
+    fn get_card_name(&self, card_id: u8) -> String {
         let mut name: String;
         match card_id {
             11 => name = "Boer".to_string(),
@@ -189,25 +200,25 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_dela
     game_set
 }
 
-// Print game, console friendly
-fn debug_game(game_set: &Game) {
-   println!("---------------------------------");    
-   println!("Debugging game with {} players and {} max turns", &game_set.player_num, &game_set.max_turns);
-   println!("Cards still in the current game pool (not drawn): {:?}", game_set.pool);
+// // Print game, console friendly
+// fn debug_game(game_set: &Game) {
+//    println!("---------------------------------");    
+//    println!("Debugging game with {} players and {} max turns", &game_set.player_num, &game_set.max_turns);
+//    println!("Cards still in the current game pool (not drawn): {:?}", game_set.pool);
    
-   for element in &game_set.pool {
-    //println!("{}", element);
-    match element {
-        11 => println!("Boer"), 
-        12 => println!("Vrouw"), 
-        13 => println!("Koning"), 
-        14 => println!("Aas"), 
-        _ =>  println!("{}", element.to_string()), 
-   }};
+//    for element in &game_set.pool {
+//     //println!("{}", element);
+//     match element {
+//         11 => println!("Boer"), 
+//         12 => println!("Vrouw"), 
+//         13 => println!("Koning"), 
+//         14 => println!("Aas"), 
+//         _ =>  println!("{}", element.to_string()), 
+//    }};
 
-   for element in &game_set.players {
-    println!("Player: {} has card {}, is human player: {}", element.id, element.card, element.is_player);
-   }
-}
+//    for element in &game_set.players {
+//     println!("Player: {} has card {}, is human player: {}", element.id, element.card, element.is_player);
+//    }
+// }
 
 
