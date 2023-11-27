@@ -17,6 +17,7 @@ struct Game {
     agent_turn_delay: u64,
 }
 
+// Create and initialise a new game
 fn new_game() -> Game {
     println!("\n");
     println!("-------- NEW GAME ----------");
@@ -28,6 +29,7 @@ fn main() {
     game_set.game_loop();
 }
 
+// Sleep thread for n milliseconds
 fn sleep(duration: u64)
 {
     thread::sleep(Duration::from_millis(duration));
@@ -35,6 +37,7 @@ fn sleep(duration: u64)
 
 impl Game {
 
+    // Print cards drawn by each agent except for the player
     fn print_cards(&self) {
         for i in 0..self.player_num {
             let player: &Player = &self.players[i as usize];
@@ -52,7 +55,7 @@ impl Game {
         }
     }
 
- // ALlow player to guess its own position
+    // Prompts user to guess card and position, return as (pos, card) tuple
     fn perform_player_turn(&self, player_num: u8, player_id: u8) -> (u8, u8) {
         let mut line = String::new();
         let mut line_2 : String = String::new();
@@ -76,7 +79,8 @@ impl Game {
         }
     }
 
-   fn game_loop(&mut self) {
+    // Core game loop
+    fn game_loop(&mut self) {
         let mut pos: u8 = 0;
         let mut card: u8 = 0;
 
@@ -124,9 +128,9 @@ impl Game {
             new_game();
         // println!("Game concluded, player guessed pos: {}, actual pos: {} for card: {}", player_pos_guess, actual_pos, player_card);
     
-}
+    }
 
-    // Get the position that a Player is in.
+    // Get the position of an agent or player (from high to low)
     fn get_order_pos(&self, player_id: u8) -> u8{
         let mut pos: u8 = 1;
         for element in &self.players {
@@ -137,9 +141,9 @@ impl Game {
         pos
     }
 
-    // Return position that AI thinks it is in
+    // // Perform AI turn, return its estimated pos
     fn perform_ai_turn(&self, player_id: u8) -> u8 {
-        let pos: u8 = self.get_order_pos(player_id);
+        let pos: u8 = self.get_order_pos(player_id); // TODO actually implement an AI element
         pos
     }
 
@@ -157,7 +161,8 @@ impl Game {
     }
 }
 
-// Return initialised game settings object
+// Constructs the Game struct that contains all current
+// game settings and return it
 fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_delay: u64) -> Game {
     if max > 14 {
         max = 14;
@@ -209,26 +214,3 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_dela
 
     game_set
 }
-
-// // Print game, console friendly
-// fn debug_game(game_set: &Game) {
-//    println!("---------------------------------");    
-//    println!("Debugging game with {} players and {} max turns", &game_set.player_num, &game_set.max_turns);
-//    println!("Cards still in the current game pool (not drawn): {:?}", game_set.pool);
-   
-//    for element in &game_set.pool {
-//     //println!("{}", element);
-//     match element {
-//         11 => println!("Boer"), 
-//         12 => println!("Vrouw"), 
-//         13 => println!("Koning"), 
-//         14 => println!("Aas"), 
-//         _ =>  println!("{}", element.to_string()), 
-//    }};
-
-//    for element in &game_set.players {
-//     println!("Player: {} has card {}, is human player: {}", element.id, element.card, element.is_player);
-//    }
-// }
-
-
