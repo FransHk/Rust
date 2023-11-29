@@ -17,16 +17,16 @@ struct Game {
     agent_turn_delay: u64,
 }
 
-// Create and initialise a new game
-fn new_game() -> Game {
-    println!("\n");
-    println!("-------- NEW GAME ----------");
-    init(5, 14, 8, 1, 3000) // Init initial game settings 
+fn main() {
+    new_game();
 }
 
-fn main() {
-    let mut game_set: Game = new_game();
-    game_set.game_loop();
+// Create and initialise a new game
+fn new_game() {
+    println!("\n");
+    println!("-------- NEW GAME ----------");
+    let mut game = init(5, 14, 8, 1, 2000);
+    game.game_loop(); 
 }
 
 // Sleep thread for n milliseconds
@@ -36,7 +36,6 @@ fn sleep(duration: u64)
 }
 
 impl Game {
-
     // Print cards drawn by each agent except for the player
     fn print_cards(&self) {
         for i in 0..self.player_num {
@@ -91,7 +90,6 @@ impl Game {
         let mut player_card: String = "".to_string();
 
         self.print_cards();
-        //for player in &self.players {
         for i in 0..self.players.len() {
                 let player = &self.players[i];
                 let card_name: String;
@@ -121,10 +119,11 @@ impl Game {
             let correct: bool = player_pos_guess == actual_pos && player_card_guess == actual_card;
             match correct {
                 true => println!("**** Congratulations, you guessed correctly. Your position is: {} and your card: {} ****", actual_pos, player_card),
-                false => println!("**** You lost. You guessed card {} and position: {}, actual card: {} with position: {}", player_card_guess, player_pos_guess, actual_card, actual_pos),
+                false => println!("**** Skill issue bro. You guessed card {} and position: {}, actual card: {} with position: {} ****", player_card_guess, player_pos_guess, actual_card, actual_pos),
             }
-            
+            println!("**** Want to play again? Of course you do, starting new round.. ****");
             sleep(2000);
+            
             new_game();
         // println!("Game concluded, player guessed pos: {}, actual pos: {} for card: {}", player_pos_guess, actual_pos, player_card);
     
@@ -141,7 +140,7 @@ impl Game {
         pos
     }
 
-    // // Perform AI turn, return its estimated pos
+    // Perform AI turn, return its estimated pos
     fn perform_ai_turn(&self, player_id: u8) -> u8 {
         let pos: u8 = self.get_order_pos(player_id); // TODO actually implement an AI element
         pos
@@ -151,10 +150,10 @@ impl Game {
     fn get_card_name(&self, card_id: u8) -> String {
         let mut name: String;
         match card_id {
-            11 => name = "Boer".to_string(),
-            12 => name = "Vrouw".to_string(), 
-            13 => name = "Koning".to_string(),
-            14 => name = "Aas".to_string(),
+            11 => name = "11 (Boer)".to_string(),
+            12 => name = "12 (Vrouw)".to_string(), 
+            13 => name = "13 (Koning)".to_string(),
+            14 => name = "14 (Aas)".to_string(),
             _ =>  name = card_id.to_string(),
         };
         name
@@ -164,6 +163,8 @@ impl Game {
 // Constructs the Game struct that contains all current
 // game settings and return it
 fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_delay: u64) -> Game {
+    
+    // We cannot have card (2 > card ID > 14)
     if max > 14 {
         max = 14;
     }
@@ -185,6 +186,7 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_dela
     let mut players = Vec::new();
     let mut is_player: bool;
     let total_players: u8 = player_num + 1;
+
     // Loop over player counts, have each draw a card 
     // and return the array of players
     let player_order_pad = 3;
@@ -209,7 +211,6 @@ fn init(mut min: u8, mut max: u8, player_num: u8, max_turns: u8, agent_turn_dela
     }
     game_set.players = players;
     game_set.player_num = game_set.players.len() as u8;
-
 
 
     game_set
