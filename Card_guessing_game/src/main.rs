@@ -1,6 +1,17 @@
 use rand::Rng;
 use std::{thread, time::Duration};
 use anyhow::{Context, Result};
+use serde::{Serialize, Deserialize};
+use std::io::{self, Read};
+use std::fs;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct MyConfig {
+    min_card: u8,
+    max_card: u8,
+    player_num: u8,
+    agent_turn_delay: u64
+}
 
 /// Player struct that contains player ID, 
 /// their card, whether they are a player, etc
@@ -8,8 +19,6 @@ struct Player {
     id: u8,
     card: u8,
     is_player: bool, 
-    last_place_guess: u8,
-    last_card_guess: u8,
 }
 
 /// Game struct that contains the card pool,
@@ -18,13 +27,31 @@ struct Player {
 struct Game {
     pool: Vec<u8>,
     player_num: u8,
-    max_turns: u8,
     players: Vec<Player>,
     agent_turn_delay: u64,
+    player_pos_guess: u8,
+    player_card_guess: u8,
+    player_actual_card: u8,
+    player_actual_pos: u8,
 }
 
+fn load_config() -> io::Result<MyConfig> {
+    // Read the configuration file
+    let config_contents = fs::read_to_string("config.json")?;
+
+    // Parse the JSON content into the MyConfig struct
+    let config: MyConfig = serde_json::from_str(&config_contents)
+        .context("Could not parse config json");
+
+    // You can now use `config` in your application
+    println!("{:?}", config);
+
+    Ok(config)
+}
 fn main() {
+    let config = load_config();
     new_game();
+
 }
 
 /// Create and initialise a new game 
@@ -36,7 +63,7 @@ fn new_game() {
     // on failure, then terminate game creation. Else, 
     // unpack the Game object and continue
     let game_res = create_game(2, 14, 8, 1, 2000);
-    let game = match game_res {
+    let mut game = match game_res {
         Ok(val)  => {
             Some(val)
         } 
@@ -44,7 +71,7 @@ fn new_game() {
             println!("Something went wrong initialising the game. Context: \'{}\'", val);
             None
         }
-    }.expect("Failed to create new game");
+    }.expect("Game creation aborted.");
        
     let result = game.game_loop(); 
     match result {
@@ -76,19 +103,22 @@ fn create_game(min: u8, max: u8, player_num: u8, max_turns: u8, agent_turn_delay
     let mut game_set = Game {
         pool: nums,
         player_num,
-        max_turns,
         players: Vec::<Player>::new(), 
         agent_turn_delay,
+        player_pos_guess: 0,
+        player_card_guess: 0,
+        player_actual_card: 0,
+        player_actual_pos: 0,
     };
 
     let mut players = Vec::new();
-    let mut is_player: bool;
+    //let mut is_player: bool;
     let total_players: u8 = player_num + 1;
 
     // Player order padding. For example, with 8 players,  
     // setting player order to 3 means that player can only get
     // turn 3, 4 or 5. 
-    let player_order_pad = 3; // TODO make constrained variable?
+    let player_order_pad = 3; 
     let min_index = player_order_pad; 
     let max_index: u8 = total_players-player_order_pad; 
 
@@ -99,18 +129,17 @@ fn create_game(min: u8, max: u8, player_num: u8, max_turns: u8, agent_turn_delay
     
     // Obtain random player turn order
     let player_index = rand::thread_rng().gen_range(min_index..total_players);
+
     // Create all Player objects for this game including
     // one non-agent (human) player 
     for i in 0..total_players{
-        is_player = i == player_index;
+        let is_player = i == player_index;
         let index = rand::thread_rng().gen_range(0..game_set.pool.len());
         let drawn_element = game_set.pool.remove(index);
         //let card_name = get_card_name(drawn_element);
         players.push(Player{card: drawn_element, 
                             is_player, 
-                            id: i, 
-                            last_card_guess: 0, 
-                            last_place_guess: 0});
+                            id: i, });
     }
     // Save players to the game settings and finish init
     game_set.players = players;
@@ -122,7 +151,7 @@ fn create_game(min: u8, max: u8, player_num: u8, max_turns: u8, agent_turn_delay
 // Sleep thread for n milliseconds
 fn sleep(duration: u64) -> Result<()> {
     thread::sleep(Duration::from_millis(duration));
-    Ok(()) // TODO: thread::sleep doesn't integrate Result so this will always return Ok?
+    Ok(()) // TODO: thread::sleep doesn't implement Result, remove this..
 }
 
 /// All game-specific methods that can be called like
@@ -132,51 +161,44 @@ impl Game {
     /// Core game loop, iteratively assigns turns to
     /// each agent and the player until every Player
     /// has performed its turn
-    fn game_loop(&self) -> anyhow::Result<()> {
-        let mut pos: u8 = 0;
-        let mut card: u8 = 0;
-        let mut player_card_guess: u8 = 0;
-        let mut player_pos_guess: u8 = 0;
-        let mut actual_pos: u8 = 0;
-        let mut actual_card: u8 = 0;
-        let mut player_card: String = "".to_string();
-        
+    fn game_loop(&mut self) -> anyhow::Result<()> {
         // Prints the initial cards drawn by everyone
         // except for the player 
         self.print_cards()?;
         for i in 0..self.players.len() {
                 let player = &self.players[i];
-                let card_name: String;
                 
-                // Player action 
-                if player.is_player {
-                    (pos, card) = self.perform_player_turn(self.player_num, player.id)?;
-                    player_pos_guess = pos;
-                    player_card_guess = card;
+                // Obtain order position and card guess from either 
+                // the player input or by the AI agent 
+                let (position, card_guess) = if player.is_player {
+                    let (pos, guess_id) = self.perform_player_turn(self.player_num, player.id)?;
+                    self.player_pos_guess = pos;
+                    self.player_card_guess = guess_id;
+                    self.player_actual_card = player.card;
+                    self.player_actual_pos = self.get_order_pos(player.id)?;
                     
-                    actual_card = player.card;
-                    actual_pos = self.get_order_pos(player.id)?;
-                    player_card = self.get_card_name(player.card)?;
-                
-                    card_name = "?".to_string();
+                    (pos, guess_id)
                 }
-                // Agent action
-                else {
+                else { 
                     // Obtain the position that the AI thinks it is in 
                     // along with its card, then artificially sleep 
-                    pos = self.perform_ai_turn(player.id)?;
-                    card_name = self.get_card_name(self.players[player.id as usize].card)?;
+                    let pos = self.perform_ai_turn(player.id)?;
+                    let guess_id = self.players[player.id as usize].card;
+                    // card_name = self.get_card_name(self.players[player.id as usize].card)?;
                     sleep(self.agent_turn_delay)?;
-                }
-        
-                println!("Player {} with card: [{}]: I think I am in place: {}", player.id, card_name, pos);
+                    (pos, guess_id) 
+                };
+                
+                let card_name = self.get_card_name(card_guess)?;
+                println!("Player {} with card: [{}]: I think I am in place: {}", player.id, card_name, position);
             }
             // true if player guessed both position and
             // the card correctly, false in all other cases
-            let correct: bool = player_pos_guess == actual_pos && player_card_guess == actual_card;
+            let correct: bool = self.player_pos_guess == self.player_actual_pos && self.player_card_guess == self.player_actual_card;
+            let player_card = self.get_card_name(self.player_actual_card)?;
             match correct {
-                true => println!("**** Congratulations, you guessed correctly. Your position is: {} and your card: {} ****", actual_pos, player_card),
-                false => println!("**** Skill issue bro. You guessed card {} and position: {}, actual card: {} with position: {} ****", player_card_guess, player_pos_guess, actual_card, actual_pos),
+                true => println!("**** Congratulations, you guessed correctly. Your position is: {} and your card: {} ****", self.player_actual_pos, player_card),
+                false => println!("**** Skill issue bro. You guessed card {} and position: {}, actual card: {} with position: {} ****", self.player_card_guess, self.player_pos_guess, self.player_actual_card, self.player_actual_pos),
             }
             println!("**** Want to play again? Of course you do, starting new round.. ****");
             sleep(2000)?;
@@ -191,15 +213,17 @@ impl Game {
     /// but obfuscates the player card
     fn print_cards(&self) -> Result<()> {
         for i in 0..self.player_num {
-            let mut player: &Player = &self.players[i as usize];
-            let mut card_name: String = "".to_string();
-            // Obfuscate player card to make the game more interesting
-            if player.is_player {
-                 card_name = "?".to_string();
+            let player: &Player = &self.players[i as usize];
+            
+            // Obtain card name and print it for each agent
+            // unless it is the human player.
+            let card_name:String = if player.is_player {
+                 "?".to_string()
             }
             else {
-                 card_name = self.get_card_name(player.card)?;
-            }
+                 self.get_card_name(player.card)?
+            };
+
             println!("Player: {} drew card: {}", player.id, card_name);
         }
         Ok(())
@@ -215,20 +239,19 @@ impl Game {
         let _card_num_in = std::io::stdin().read_line(&mut line).unwrap();
         println!("And what is your global position between {} and {}", 1, player_num);
         let _card_num_in_2 = std::io::stdin().read_line(&mut line_2).unwrap();
-        
         let trimmed_in = line.trim();
         let trimmed_in_2 = line_2.trim();
-
         let is_numeric = trimmed_in.parse::<i32>().is_ok() && trimmed_in_2.parse::<i32>().is_ok();
         
         // TODO include this in error handling (remove expect)
         if is_numeric {
-            let card_numeric: u8 = trimmed_in.parse::<u8>().expect("Failed to parse input");
-            let pos_numeric: u8 = trimmed_in_2.parse::<u8>().expect("Failed to parse input");
+            let card_numeric: u8 = trimmed_in.parse::<u8>()?;
+            let pos_numeric: u8 = trimmed_in_2.parse::<u8>()?;
             Ok((pos_numeric, card_numeric))
         }
         else {
             // Not numeric, recurisvely prompt user again
+            println!("I didn't understand your input, please make sure that both your position and card number are numeric.");
             self.perform_player_turn(player_num, player_id)
         }
     }
