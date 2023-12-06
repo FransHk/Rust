@@ -33,8 +33,8 @@ fn new_game() {
     println!("-------- NEW GAME ----------");
     
     // Attempt to create a new game, print context
-    // on failure, then terminate game creation by panic
-    // TODO replace panic by attempting to handle the error.. 
+    // on failure, then terminate game creation. Else, 
+    // unpack the Game object and continue
     let game_res = create_game(2, 14, 8, 1, 2000);
     let game = match game_res {
         Ok(val)  => {
