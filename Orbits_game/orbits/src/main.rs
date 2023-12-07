@@ -7,13 +7,14 @@ use opengl_graphics::{GlGraphics, OpenGL};
 // Quick set of (unoptimised) array operations
 // used in this celestial body simulation
 mod utils;
+use utils::array_logic as al;
 
 // Some constants used throughout the code
 type Colour = [f32; 4];
 const BLUE: Colour = [0.0, 0.0, 1.0, 1.0];
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
-const GRAV_CONST: f32 = 4.0;
+const GRAV_CONST: f64 = 4.0;
 
 
 /// This object represents a celestial body along
@@ -39,13 +40,12 @@ impl Planet {
 
     /// Perform step-wise updates to velocity and position
     fn update(&mut self, args: &UpdateArgs){
-        // Scale acceleration and velocity with deltatime
-        // to make speed and acceleration frame-independent, 
-        // then apply to the position of the planet
-        let scaled_acc = utils::array_logic::scalar_mult(self.acceleration, args.dt);
-        self.velocity = utils::array_logic::add_arrays(self.velocity, scaled_acc);
-        let scaled_vel = utils::array_logic::scalar_mult(self.velocity, args.dt);
-        self.position = utils::array_logic::add_arrays(self.position, scaled_vel);
+        // scale by deltatime (e.g. move velocity[0] p/sec on x, velocity[1] p/sec on y
+        // this makes movement movement frame-independent
+        let scaled_acc = al::scalar_mult(self.acceleration, args.dt); // scale by deltatime
+        self.velocity = al::add_arrays(self.velocity, scaled_acc); 
+        let scaled_vel = al::scalar_mult(self.velocity, args.dt);         
+        self.position = al::add_arrays(self.position, scaled_vel);
     }
     //     TODO IMPLEMENT FULL SET OF LOGIC (what DOES forceDir * scalar do?)
     //     for coord in coords:
@@ -58,13 +58,16 @@ impl Planet {
     //     new_coords.append(new_coord)
     //     print("Transformed {} to {}".format(coord, new_coord))
     // return np.array(new_coords)
+    
     fn grav_force(&mut self, acting_force: &mut Planet) {
-        let dist = utils::array_logic::subtract_arrays(self.position, acting_force.position);
-        let sqr_dist = utils::array_logic::dot_product(dist, dist);
-        let force_dir = utils::array_logic::normalise_vector(dist);
-        let force = utils::array_logic::scalar_mult(force_dir, GRAV_CONST * 10 * -1);
+        let dist = al::subtract_arrays(self.position, acting_force.position);
+        let sqr_dist = al::dot_product(dist, dist);
+        let force_dir = al::normalise_vector(dist);
+        let force = al::scalar_mult(force_dir, GRAV_CONST * 10.0 * -1.0);
+        let force = al::scalar_mult(force, 1.0/sqr_dist);
+
         // TODO IMPLEMENT ARRAY DIVISIONS
-        println!("{:?}", normalised); 
+       // println!("{:?}", normalised); 
     }
 
     /// Accept created graphical context and GL object,
@@ -84,22 +87,18 @@ impl Planet {
     /// TODO consider correcting position to prevent clipping
     fn check_collision(&mut self, bounds: f64){
         if(self.position[0] + self.size[0] >= 500.0){
-            //println!("Bounce to left");
             self.velocity[0] *= -1.0;
             self.acceleration[0] *= -1.0;
         }
         if(self.position[0] <= 0.0) {
-            //println!("Bounce to right");
             self.velocity[0] *= -1.0;
             self.acceleration[0] *= -1.0;
         }
         if(self.position[1] + self.size[1] >= 500.0) {
-            //println!("Bounce up");
             self.velocity[1] *= -1.0;
             self.acceleration[1] *= -1.0;
         }
         if(self.position[1] <= 0.0) {
-            //println!("Bounce down");
             self.velocity[1] *= -1.0;
             self.acceleration[1] *= -1.0;
         }
@@ -115,7 +114,7 @@ fn main() {
     let mut window: GlutinWindow = settings.build().expect("Could not create window");
     let mut gl = GlGraphics::new(opengl);
     let mut events = Events::new(EventSettings::new()); 
-    println!("{:?}", normalised); 
+    
     // Game loop. First, render every object (planet),
     // then, update each planet's position and check 
     // for collisions.
