@@ -161,7 +161,7 @@ fn main() {
                         let (left, right) = planets_slice.split_at_mut(i+1);
                         let planet = &mut left[i];
                         for other_planet in right.iter() {
-                            planet.grav_force(other_planet);
+                            planet.g    rav_force(other_planet);
                         }
                 }
                 // for planet in planets.iter_mut(){
