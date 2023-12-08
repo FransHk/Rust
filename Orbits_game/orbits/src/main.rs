@@ -7,7 +7,7 @@ use opengl_graphics::{GlGraphics, OpenGL};
 // Quick set of (unoptimised) array operations
 // used in this celestial body simulation
 mod utils;
-use utils::array_logic as al;
+use utils::array_logic::{self as al, dot_product};
 
 // Some constants used throughout the code
 type Colour = [f32; 4];
@@ -26,6 +26,7 @@ struct Planet {
     velocity: [f64; 2],
     acceleration: [f64; 2],
     size: [f64; 2],
+    mass: f64,
 }
 
 impl Planet {
@@ -38,6 +39,7 @@ impl Planet {
         velocity: [184.0, -242.0],
         acceleration: [-20.0, 20.0],
         id: 0,
+        mass: 10.0,
     }}
 
     /// Perform step-wise updates to velocity and position
@@ -62,11 +64,13 @@ impl Planet {
     // return np.array(new_coords)
     
     fn grav_force(&mut self, acting_force: &Planet) {
+        println!("Dealing with grav_force of: {}",self.id);
         let dist = al::subtract_arrays(self.position, acting_force.position);
         let sqr_dist = al::dot_product(dist, dist);
         let force_dir = al::normalise_vector(dist);
-        let force = al::scalar_mult(force_dir, GRAV_CONST * 10.0 * -1.0);
+        let force = al::scalar_mult(force_dir, GRAV_CONST * -1.0 * acting_force.mass);
         let force = al::scalar_mult(force, 1.0/sqr_dist);
+        println!("grav force: {:?}", force);
         self.velocity = al::add_arrays(self.velocity, force);
         // TODO IMPLEMENT ARRAY DIVISIONS
        // println!("{:?}", normalised); 
@@ -106,15 +110,17 @@ impl Planet {
         }
     }
 }
+
 fn create_planets(amt: u32) -> Vec<Planet> {
     let mut planets: Vec<Planet> = Vec::<Planet>::new();
     planets.push(Planet{
-        id: 1,
+        id: 0,
         position: [200.0, 200.0],
         size: [20.0, 20.0],
         colour: WHITE,
         velocity: [0.0, 0.0],
         acceleration: [0.0, 0.0],
+        mass: 50.0,
     });
     planets.push(Planet{
         id: 1,
@@ -123,6 +129,7 @@ fn create_planets(amt: u32) -> Vec<Planet> {
         colour: WHITE,
         velocity: [0.0, 0.0],
         acceleration: [0.0, 0.0],
+        mass: 1.0,
     });
 
     planets
@@ -156,15 +163,18 @@ fn main() {
                 for planet in planets.iter_mut() {
                     planet.update(&args); // pass update args for 'dt' value to scale movement
                 }
-                let planets_slice = planets.as_mut_slice();
-                    for i in 0..planets_slice.len() {
-                        let (left, right) = planets_slice.split_at_mut(i+1);
-                        let planet = &mut left[i];
-                        for other_planet in right.iter() {
-                            planet.g    rav_force(other_planet);
+
+                for i in 0..planets.len() {
+                    for j in 0..planets.len() {
+                        if i != j {
+                            let (left, right) = planets.split_at_mut(i);
+                            let planet: &mut Planet = &mut left[i];
+                            let other_planet = &right[j];
+                            planet.grav_force(other_planet);
                         }
+                    }
                 }
-                // for planet in planets.iter_mut(){
+                // for planet in planets.iter(){
                 //     for other_planet in planets.iter(){
                 //         if(planet.id != other_planet.id){
                 //             planet.grav_force(&other_planet);
