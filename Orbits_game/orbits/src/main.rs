@@ -67,7 +67,7 @@ impl Planet {
         let force_dir = al::normalise_vector(dist);
         let force = al::scalar_mult(force_dir, GRAV_CONST * 10.0 * -1.0);
         let force = al::scalar_mult(force, 1.0/sqr_dist);
-
+        self.velocity = al::add_arrays(self.velocity, force);
         // TODO IMPLEMENT ARRAY DIVISIONS
        // println!("{:?}", normalised); 
     }
@@ -146,25 +146,31 @@ fn main() {
         let planets = &mut planets;
         if let Some(r) = e.render_args() {
             gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
-                //let tile = &mut planet; // Create reference to the planet object, we do not want ownership or a copy
                 graphics::clear(BLUE, g); 
                 for planet in planets.iter() {
                     planet.draw(c, g);
                 }
-                //tile.draw(c, g); // draw tile 
                 });            }
             
         if let Some(args) = e.update_args() {
                 for planet in planets.iter_mut() {
                     planet.update(&args); // pass update args for 'dt' value to scale movement
                 }
-                for planet in planets.iter_mut(){
-                    for other_planet in planets.iter(){
-                        if(planet.id != other_planet.id){
-                            planet.grav_force(&other_planet);
+                let planets_slice = planets.as_mut_slice();
+                    for i in 0..planets_slice.len() {
+                        let (left, right) = planets_slice.split_at_mut(i+1);
+                        let planet = &mut left[i];
+                        for other_planet in right.iter() {
+                            planet.grav_force(other_planet);
                         }
-                    }
                 }
+                // for planet in planets.iter_mut(){
+                //     for other_planet in planets.iter(){
+                //         if(planet.id != other_planet.id){
+                //             planet.grav_force(&other_planet);
+                //         }
+                //     }
+                // }
                 // perform gravitational 
                     
         }
