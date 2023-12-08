@@ -20,6 +20,7 @@ const GRAV_CONST: f64 = 4.0;
 /// This object represents a celestial body along
 /// with its properties like pos, vel and acceleration
 struct Planet {
+    id: i8,
     colour: Colour,
     position: [f64; 2],
     velocity: [f64; 2],
@@ -36,6 +37,7 @@ impl Planet {
         colour: BLACK,
         velocity: [184.0, -242.0],
         acceleration: [-20.0, 20.0],
+        id: 0,
     }}
 
     /// Perform step-wise updates to velocity and position
@@ -59,7 +61,7 @@ impl Planet {
     //     print("Transformed {} to {}".format(coord, new_coord))
     // return np.array(new_coords)
     
-    fn grav_force(&mut self, acting_force: &mut Planet) {
+    fn grav_force(&mut self, acting_force: &Planet) {
         let dist = al::subtract_arrays(self.position, acting_force.position);
         let sqr_dist = al::dot_product(dist, dist);
         let force_dir = al::normalise_vector(dist);
@@ -104,9 +106,31 @@ impl Planet {
         }
     }
 }
+fn create_planets(amt: u32) -> Vec<Planet> {
+    let mut planets: Vec<Planet> = Vec::<Planet>::new();
+    planets.push(Planet{
+        id: 1,
+        position: [200.0, 200.0],
+        size: [20.0, 20.0],
+        colour: WHITE,
+        velocity: [0.0, 0.0],
+        acceleration: [0.0, 0.0],
+    });
+    planets.push(Planet{
+        id: 1,
+        position: [200.0, 100.0],
+        size: [20.0, 20.0],
+        colour: WHITE,
+        velocity: [0.0, 0.0],
+        acceleration: [0.0, 0.0],
+    });
+
+    planets
+}
 
 fn main() {
-    let mut planet = Planet::new();   
+    //let mut planet = Planet::new();   
+    let mut planets = create_planets(0);
     let bounds: f64 = 512.0; // essentially the window size
 
     let opengl = OpenGL::V3_2;
@@ -119,17 +143,30 @@ fn main() {
     // then, update each planet's position and check 
     // for collisions.
     while let Some(e) = events.next(&mut window) {
+        let planets = &mut planets;
         if let Some(r) = e.render_args() {
             gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
-                let tile = &mut planet; // Create reference to the planet object, we do not want ownership or a copy
+                //let tile = &mut planet; // Create reference to the planet object, we do not want ownership or a copy
                 graphics::clear(BLUE, g); 
-                tile.draw(c, g); // draw tile 
+                for planet in planets.iter() {
+                    planet.draw(c, g);
+                }
+                //tile.draw(c, g); // draw tile 
                 });            }
             
         if let Some(args) = e.update_args() {
-                let tile = &mut planet; // Create reference to the planet object, we do not want ownership or a copy
-                tile.update(&args); // Update pos, vel
-                tile.check_collision(bounds); // Check if border is exceeded, if so, flip
-            }
+                for planet in planets.iter_mut() {
+                    planet.update(&args); // pass update args for 'dt' value to scale movement
+                }
+                for planet in planets.iter_mut(){
+                    for other_planet in planets.iter(){
+                        if(planet.id != other_planet.id){
+                            planet.grav_force(&other_planet);
+                        }
+                    }
+                }
+                // perform gravitational 
+                    
+        }
     }
 }
