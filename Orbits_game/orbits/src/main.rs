@@ -115,7 +115,7 @@ fn create_planets(amt: u32) -> (Planet, Vec<Planet>) {
         id: 0,
         colour: WHITE,
         position: [200.0, 100.0],
-        velocity: [80.0, 40.0],
+        velocity: [120.0, 40.0],
         acceleration: [0.0, 0.0],
         size: [10.0, 10.0],
         mass: 3.0,
