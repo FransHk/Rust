@@ -70,10 +70,9 @@ impl Planet {
         let force_dir = al::normalise_vector(dist);
         let force = al::scalar_mult(force_dir, GRAV_CONST * -1.0 * acting_force.mass);
         let force = al::scalar_mult(force, 1.0/sqr_dist);
-        println!("grav force: {:?}", force);
+        // println!("grav force: {:?}", force);
         self.velocity = al::add_arrays(self.velocity, force);
-        // TODO IMPLEMENT ARRAY DIVISIONS
-       // println!("{:?}", normalised); 
+        println!("Planet {} interacting with planet {}", self.id, acting_force.id);
     }
 
     /// Accept created graphical context and GL object,
@@ -111,33 +110,43 @@ impl Planet {
     }
 }
 
-fn create_planets(amt: u32) -> Vec<Planet> {
-    let mut planets: Vec<Planet> = Vec::<Planet>::new();
-    planets.push(Planet{
+fn create_planets(amt: u32) -> (Planet, Vec<Planet>) {
+    let mut other_planets: Vec<Planet> = Vec::<Planet>::new();
+    let planet = Planet { 
         id: 0,
+        colour: WHITE,
+        position: [200.0, 100.0],
+        velocity: [30.0, 0.0],
+        acceleration: [0.0, 0.0],
+        size: [10.0, 10.0],
+        mass: 3.0,
+    };
+    
+    other_planets.push(Planet{
+        id: 1,
         position: [200.0, 200.0],
         size: [20.0, 20.0],
-        colour: WHITE,
+        colour: BLACK,
         velocity: [0.0, 0.0],
         acceleration: [0.0, 0.0],
-        mass: 50.0,
+        mass: 80.0,
     });
-    planets.push(Planet{
-        id: 1,
-        position: [200.0, 100.0],
-        size: [20.0, 20.0],
-        colour: WHITE,
-        velocity: [0.0, 0.0],
-        acceleration: [0.0, 0.0],
-        mass: 1.0,
-    });
-
-    planets
+    // other_planets.push(Planet{
+    //     id: 2,
+    //     position: [200.0, 100.0],
+    //     size: [30.0, 30.0],
+    //     colour: WHITE,
+    //     velocity: [0.0, 0.0],
+    //     acceleration: [0.0, 0.0],
+    //     mass: 30.0,
+    // });
+    
+    (planet, other_planets)
 }
 
 fn main() {
     //let mut planet = Planet::new();   
-    let mut planets = create_planets(0);
+    let (mut plan, mut other_plan) = create_planets(0);
     let bounds: f64 = 512.0; // essentially the window size
 
     let opengl = OpenGL::V3_2;
@@ -150,30 +159,32 @@ fn main() {
     // then, update each planet's position and check 
     // for collisions.
     while let Some(e) = events.next(&mut window) {
-        let planets = &mut planets;
+        
+        let player_planet: &mut Planet = &mut plan; 
+        let other_planets = &mut other_plan;
+
         if let Some(r) = e.render_args() {
             gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
                 graphics::clear(BLUE, g); 
-                for planet in planets.iter() {
+                player_planet.draw(c, g);
+                for planet in other_planets.iter() {
                     planet.draw(c, g);
                 }
+                
                 });            }
             
         if let Some(args) = e.update_args() {
-                for planet in planets.iter_mut() {
+                player_planet.update(&args);
+                for planet in other_planets.iter_mut() {
                     planet.update(&args); // pass update args for 'dt' value to scale movement
                 }
 
-                for i in 0..planets.len() {
-                    for j in 0..planets.len() {
-                        if i != j {
-                            let (left, right) = planets.split_at_mut(i);
-                            let planet: &mut Planet = &mut left[i];
-                            let other_planet = &right[j];
-                            planet.grav_force(other_planet);
-                        }
-                    }
+                for planet in other_planets.iter(){
+                    player_planet.grav_force(planet);
                 }
+         
+}
+
                 // for planet in planets.iter(){
                 //     for other_planet in planets.iter(){
                 //         if(planet.id != other_planet.id){
@@ -181,8 +192,6 @@ fn main() {
                 //         }
                 //     }
                 // }
-                // perform gravitational 
-                    
-        }
-    }
+               // perform gravitational 
+}
 }
