@@ -14,7 +14,7 @@ type Colour = [f32; 4];
 const BLUE: Colour = [0.0, 0.0, 1.0, 1.0];
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
-const GRAV_CONST: f64 = 4.0;
+const GRAV_CONST: f64 = 10.0;
 
 
 /// This object represents a celestial body along
@@ -64,7 +64,6 @@ impl Planet {
     // return np.array(new_coords)
     
     fn grav_force(&mut self, acting_force: &Planet) {
-        println!("Dealing with grav_force of: {}",self.id);
         let dist = al::subtract_arrays(self.position, acting_force.position);
         let sqr_dist = al::dot_product(dist, dist);
         let force_dir = al::normalise_vector(dist);
@@ -72,7 +71,7 @@ impl Planet {
         let force = al::scalar_mult(force, 1.0/sqr_dist);
         // println!("grav force: {:?}", force);
         self.velocity = al::add_arrays(self.velocity, force);
-        println!("Planet {} interacting with planet {}", self.id, acting_force.id);
+        //println!("Planet {} interacting with planet {}", self.id, acting_force.id);
     }
 
     /// Accept created graphical context and GL object,
@@ -116,7 +115,7 @@ fn create_planets(amt: u32) -> (Planet, Vec<Planet>) {
         id: 0,
         colour: WHITE,
         position: [200.0, 100.0],
-        velocity: [30.0, 0.0],
+        velocity: [80.0, 40.0],
         acceleration: [0.0, 0.0],
         size: [10.0, 10.0],
         mass: 3.0,
@@ -125,11 +124,11 @@ fn create_planets(amt: u32) -> (Planet, Vec<Planet>) {
     other_planets.push(Planet{
         id: 1,
         position: [200.0, 200.0],
-        size: [20.0, 20.0],
+        size: [50.0, 50.0],
         colour: BLACK,
         velocity: [0.0, 0.0],
         acceleration: [0.0, 0.0],
-        mass: 80.0,
+        mass: 450.0,
     });
     // other_planets.push(Planet{
     //     id: 2,
@@ -181,6 +180,7 @@ fn main() {
 
                 for planet in other_planets.iter(){
                     player_planet.grav_force(planet);
+                    player_planet.check_collision(bounds);
                 }
          
 }
