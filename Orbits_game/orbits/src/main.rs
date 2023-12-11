@@ -7,7 +7,7 @@ use piston::WindowSettings;
 // Quick set of (unoptimised) array operations
 // used in this celestial body simulation
 mod utils;
-use utils::array_logic::{self as al, dot_product};
+use utils::array_logic::{self as al};
 
 // Some constants used throughout the code
 type Colour = [f32; 4];
@@ -38,18 +38,6 @@ impl CelestialBody for Planet {
 }
 
 impl Planet {
-    /// Construct new celestial body
-    // fn new() -> Planet {
-    //     Planet {
-    //     position: [100.0, 100.0],
-    //     size: [40.0, 40.0],
-    //     colour: BLACK,
-    //     velocity: [184.0, -242.0],
-    //     acceleration: [-20.0, 20.0],
-    //     id: 0,
-    //     mass: 10.0,
-    // }}
-
     fn add_force(&mut self, force: [f64; 2]) {
         self.velocity = al::add_arrays(self.velocity, force);
     }
@@ -115,7 +103,7 @@ fn create_planets(amt: u32) -> Vec<Planet> {
 
     other_planets.push(Planet {
         id: 0,
-        position: [200.0, 200.0],
+        position: [20.0, 100.0],
         size: [50.0, 50.0],
         colour: WHITE,
         velocity: [0.0, 0.0],
@@ -129,7 +117,7 @@ fn create_planets(amt: u32) -> Vec<Planet> {
         colour: WHITE,
         velocity: [0.0, 0.0],
         acceleration: [0.0, 0.0],
-        mass: 450.0,
+        mass: 10.0,
     });
     other_planets
 }
@@ -169,14 +157,15 @@ fn main() {
             for planet in planets.iter_mut() {
                 planet.update(&args); // pass update args for 'dt' value to scale movement
             }
-        }
-
-        for i in 0..planets.len() {
-            for j in 0..planets.len() {
-                let grav = grav_force(&planets[i], &planets[j]);
-                planets.apply_gravity(grav);
+            for i in 0..planets.len() {
+                for j in 0..planets.len() {
+                    let grav = grav_force(&planets[i], &planets[j]);
+                    planets[i].add_force(grav);
+                }
             }
-        }
+            }
+
+
 
         // perform gravitational
     }
@@ -187,15 +176,16 @@ pub trait CelestialBody {
     fn pos(&self) -> [f64; 2];
 }
 
-pub fn grav_force<CelestialBody>(mass1: &CelestialBody, mass2: &CelestialBody) -> [f64; 2] {
+pub fn grav_force<C: CelestialBody>(mass1: &C, mass2: &C) -> [f64; 2] {
     let dist = al::subtract_arrays(mass1.pos(), mass2.pos());
+    println!("dist: {:?}", dist);
     let sqr_dist = al::dot_product(dist, dist);
     let force_dir = al::normalise_vector(dist);
     let force = al::scalar_mult(force_dir, GRAV_CONST * -1.0 * mass2.mass());
+    
     let force = al::scalar_mult(force, 1.0 / sqr_dist);
-
-    force
-    // println!("grav force: {:?}", force);
+    println!("Force: {:?}", force);
+    return force;
     //al::add_arrays(mass1.velocity, force)
     //println!("Planet {} interacting with planet {}", self.id, acting_force.id);
 }
