@@ -3,7 +3,7 @@ use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventLoop, EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::WindowSettings;
-
+use rand::Rng;
 // Quick set of (unoptimised) array operations
 // used in this celestial body simulation
 mod utils;
@@ -14,10 +14,11 @@ type Colour = [f32; 4];
 const BLUE: Colour = [0.0, 0.0, 1.0, 1.0];
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
-const GRAV_CONST: f64 = 10.0;
+const GRAV_CONST: f64 = 6.0;
 
 /// This object represents a celestial body along
 /// with its properties like pos, vel and acceleration
+#[derive(Debug)]
 struct Planet {
     id: i8,
     colour: Colour,
@@ -88,44 +89,69 @@ impl Planet {
     }
 }
 
+fn generate_planet() -> ([f64; 2], [f64; 2], f64) {
+    let mut rng = rand::thread_rng();
+    let lower_bound = 0.0;
+    let upper_bound = 512.0;
+    let vel_bound = 3.0;
+    let mass_lower = 1.0;
+    let mass_upper = 20.0;
+
+    let random_x = rng.gen_range(lower_bound..upper_bound);
+    let random_y = rng.gen_range(lower_bound..upper_bound);
+    let vel_x = rng.gen_range(0.0..vel_bound);
+    let vel_y = rng.gen_range(-vel_bound..vel_bound);
+    let mass: f64 = rng.gen_range(mass_lower..mass_upper);
+
+    let pos: [f64; 2] = [random_x, random_y];
+    let vel: [f64; 2] = [vel_x, vel_y];
+    (pos, vel, mass)
+}
 fn create_planets(amt: u32) -> Vec<Planet> {
     //(Planet, Vec<Planet>) {
-    let mut other_planets: Vec<Planet> = Vec::<Planet>::new();
-    // let planet = Planet {
-    //     id: 0,
-    //     colour: WHITE,
-    //     position: [250.0, 150.0],
-    //     velocity: [90.0, 40.0],
-    //     acceleration: [0.0, 0.0],
-    //     size: [10.0, 10.0],
-    //     mass: 3.0,
-    // };
+    let mut planets = Vec::<Planet>::new();
+    for i in 0..amt {
+        let params = generate_planet();
 
-    other_planets.push(Planet {
-        id: 0,
-        position: [20.0, 100.0],
-        size: [50.0, 50.0],
-        colour: WHITE,
-        velocity: [0.0, 0.0],
-        acceleration: [0.0, 0.0],
-        mass: 450.0,
-    });
-    other_planets.push(Planet {
-        id: 1,
-        position: [200.0, 200.0],
-        size: [50.0, 50.0],
-        colour: WHITE,
-        velocity: [0.0, 0.0],
-        acceleration: [0.0, 0.0],
-        mass: 10.0,
-    });
-    other_planets
+        planets.push(Planet {
+            id: i as i8,
+            colour: WHITE,
+            position: params.0,
+            velocity: params.1,
+            acceleration: [0.0, 0.0],
+            size: [params.2 * 0.5, params.2 * 0.5],
+            mass: params.2,
+        })
+    }
+
+    // let other_planets = vec![
+    //     Planet {
+    //         id: 0,
+    //         position: [200.0, 200.0],
+    //         size: [20.0, 20.0],
+    //         colour: WHITE,
+    //         velocity: [3.0, 0.0],
+    //         acceleration: [0.0, 0.0],
+    //         mass: 250.0,
+    //     },
+    //     Planet {
+    //         id: 1,
+    //         position: [350.0, 100.0],
+    //         size: [10.0, 10.0],
+    //         colour: WHITE,
+    //         velocity: [15.0, 10.0],
+    //         acceleration: [0.0, 0.0],
+    //         mass: 5.0,
+    //     },
+    // ];
+    // println!("{:?}", other_planets[0].pos());
+    planets
 }
 
 fn main() {
     //let mut planet = Planet::new();
     //let (mut plan, mut other_plan) = create_planets(0);
-    let mut planets = create_planets(0);
+    let mut planets = create_planets(30);
     let bounds: f64 = 512.0; // essentially the window size
 
     let opengl = OpenGL::V3_2;
@@ -156,16 +182,17 @@ fn main() {
             // player_planet.update(&args);
             for planet in planets.iter_mut() {
                 planet.update(&args); // pass update args for 'dt' value to scale movement
+                planet.check_collision(bounds); // println!("{:?}", planet.pos());
             }
             for i in 0..planets.len() {
                 for j in 0..planets.len() {
-                    let grav = grav_force(&planets[i], &planets[j]);
-                    planets[i].add_force(grav);
+                    if (i != j) {
+                        let grav = grav_force(&planets[i], &planets[j]);
+                        planets[i].add_force(grav);
+                    }
                 }
             }
-            }
-
-
+        }
 
         // perform gravitational
     }
@@ -177,15 +204,15 @@ pub trait CelestialBody {
 }
 
 pub fn grav_force<C: CelestialBody>(mass1: &C, mass2: &C) -> [f64; 2] {
+    //println!("{:?}", mass1.pos());
     let dist = al::subtract_arrays(mass1.pos(), mass2.pos());
-    println!("dist: {:?}", dist);
+    //println!("dist: {:?}", dist);
     let sqr_dist = al::dot_product(dist, dist);
     let force_dir = al::normalise_vector(dist);
     let force = al::scalar_mult(force_dir, GRAV_CONST * -1.0 * mass2.mass());
-    
+
     let force = al::scalar_mult(force, 1.0 / sqr_dist);
-    println!("Force: {:?}", force);
+    // println!("Force: {:?}", force);
     return force;
-    //al::add_arrays(mass1.velocity, force)
     //println!("Planet {} interacting with planet {}", self.id, acting_force.id);
 }
