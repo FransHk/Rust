@@ -23,6 +23,10 @@ pub fn dot_product(array_1: [f64; 2], array_2: [f64; 2]) -> f64 {
     array_1[0] * array_2[0] + array_1[1] * array_2[1]
 }
 
+pub fn get_length(array: [f64; 2]) -> f64 {
+    f64::sqrt(array[0] * array[0] + array[1] * array[1])
+}
+
 // Returns a normalised vector
 pub fn normalise_vector(array: [f64; 2]) -> [f64; 2] {
     let denom = array[0] * array[0] + array[1] * array[1];
