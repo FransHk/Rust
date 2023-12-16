@@ -68,7 +68,11 @@ impl Planet {
             mass: mass,
         }
     }
-    
+
+    fn reset_pos(&self) {
+        // TODO implement this method
+    }
+
     fn add_force(&mut self, force: [f64; 2]) {
         self.velocity = al::add_arrays(self.velocity, force);
     }
