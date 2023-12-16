@@ -14,13 +14,13 @@ type Colour = [f32; 4];
 const BLUE: Colour = [0.0, 0.0, 1.0, 1.0];
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
-const GRAV_CONST: f64 = 4.0;
+const GRAV_CONST: f64 = 5.0;
 
 /// This object represents a celestial body along
 /// with its properties like pos, vel and acceleration
 #[derive(Debug)]
 struct Planet {
-    id: i8,
+    id: u32,
     colour: Colour,
     position: [f64; 2],
     velocity: [f64; 2],
@@ -39,6 +39,36 @@ impl CelestialBody for Planet {
 }
 
 impl Planet {
+    // TODO let it take a size enum (large, med, small) 
+    // to initialise either (e.g. make it a multiplier for size, mass..)
+    fn new(bounds: f64, id: u32, colour: Colour) -> Planet{
+        let mut rng = rand::thread_rng();
+        let lower_bound = 0.0;
+        let upper_bound = bounds;
+        let vel_bound = 10.0;
+        let mass_lower = 0.1;
+        let mass_upper = 4.0;
+
+        let random_x = rng.gen_range(lower_bound..upper_bound);
+        let random_y = rng.gen_range(lower_bound..upper_bound);
+        let vel_x = rng.gen_range(-vel_bound..vel_bound);
+        let vel_y = rng.gen_range(-vel_bound..vel_bound);
+        let mass: f64 = rng.gen_range(mass_lower..mass_upper);
+
+        let pos: [f64; 2] = [random_x, random_y];
+        let vel: [f64; 2] = [vel_x, vel_y];
+
+        Planet { 
+            id: id,
+            colour: colour,
+            position: pos,
+            velocity: vel, 
+            acceleration: [0.0, 0.0], // TODO consider removing?
+            size: [mass * 0.5, mass * 0.5], // TODO set this to self.ratio
+            mass: mass,
+        }
+    }
+    
     fn add_force(&mut self, force: [f64; 2]) {
         self.velocity = al::add_arrays(self.velocity, force);
     }
@@ -62,15 +92,20 @@ impl Planet {
             self.size[0],
             self.size[1],
         ];
-        //println!("{:?}", pos);
         graphics::Rectangle::new(self.colour).draw(pos, &c.draw_state, c.transform, g);
+    }
+    fn check_dist_from_centre(&mut self, centre: [f64; 2]){
+        let dist = al::subtract_arrays(self.pos(), centre);
+        let dist_len= al::get_length(dist); 
+        if(dist_len > 500.0){
+        }
     }
 
     /// Simply checks for border collisions, turns
     /// body around on collision (bouncy balls)
     /// TODO consider correcting position to prevent clipping
     fn check_collision(&mut self, bounds: f64) {
-        if (self.position[0] + self.size[0] >= 500.0) {
+        if (self.position[0] + self.size[0] >= bounds) {
             self.velocity[0] *= -1.0;
             self.acceleration[0] *= -1.0;
         }
@@ -78,7 +113,7 @@ impl Planet {
             self.velocity[0] *= -1.0;
             self.acceleration[0] *= -1.0;
         }
-        if (self.position[1] + self.size[1] >= 500.0) {
+        if (self.position[1] + self.size[1] >= bounds) {
             self.velocity[1] *= -1.0;
             self.acceleration[1] *= -1.0;
         }
@@ -87,83 +122,26 @@ impl Planet {
             self.acceleration[1] *= -1.0;
         }
     }
+    
 }
 
-fn generate_planet() -> ([f64; 2], [f64; 2], f64) {
-    let mut rng = rand::thread_rng();
-    let lower_bound = 0.0;
-    let upper_bound = 512.0;
-    let vel_bound = 10.0;
-    let mass_lower = 0.5;
-    let mass_upper = 3.0;
-
-    let random_x = rng.gen_range(lower_bound..upper_bound);
-    let random_y = rng.gen_range(lower_bound..upper_bound);
-    let vel_x = rng.gen_range(-vel_bound..vel_bound);
-    let vel_y = rng.gen_range(-vel_bound..vel_bound);
-    let mass: f64 = rng.gen_range(mass_lower..mass_upper);
-
-    let pos: [f64; 2] = [random_x, random_y];
-    let vel: [f64; 2] = [vel_x, vel_y];
-    (pos, vel, mass)
-}
-fn create_planets(amt: u32) -> Vec<Planet> {
+fn create_planets(amt: u32, bounds: f64) -> Vec<Planet> {
     //(Planet, Vec<Planet>) {
     let mut planets = Vec::<Planet>::new();
     for i in 0..amt {
-        let params = generate_planet();
-        let size_to_mass_r = 0.3;
-        planets.push(Planet {
-            id: i as i8,
-            colour: WHITE,
-            position: params.0,
-            velocity: params.1,
-            acceleration: [0.0, 0.0],
-            size: [params.2 * size_to_mass_r, params.2 * size_to_mass_r],
-            mass: params.2,
-        });
+        planets.push(Planet::new(bounds, i, WHITE));
     }
+    
 
-    let params = generate_planet();
-    planets.push(Planet {
-        id: planets.len() as i8,
-        colour: WHITE,
-        position: [200.0, 200.0],
-        velocity: params.1,
-        acceleration: [0.0, 0.0],
-        size: [10.0, 10.0],
-        mass: 20.0,
-    });
-
-    // let other_planets = vec![
-    //     Planet {
-    //         id: 0,
-    //         position: [200.0, 200.0],
-    //         size: [20.0, 20.0],
-    //         colour: WHITE,
-    //         velocity: [3.0, 0.0],
-    //         acceleration: [0.0, 0.0],
-    //         mass: 250.0,
-    //     },
-    //     Planet {
-    //         id: 1,
-    //         position: [350.0, 100.0],
-    //         size: [10.0, 10.0],
-    //         colour: WHITE,
-    //         velocity: [15.0, 10.0],
-    //         acceleration: [0.0, 0.0],
-    //         mass: 5.0,
-    //     },
-    // ];
-    // println!("{:?}", other_planets[0].pos());
     planets
 }
 
 fn main() {
     //let mut planet = Planet::new();
     //let (mut plan, mut other_plan) = create_planets(0);
-    let mut planets = create_planets(40);
-    let bounds: f64 = 512.0; // essentially the window size
+    let bounds: f64 = 1024.0; // essentially the window size
+    let centre: [f64; 2] = [bounds * 0.5, bounds * 0.5];
+    let mut planets = create_planets(40, bounds);
 
     let opengl = OpenGL::V3_2;
     let settings = WindowSettings::new("Window", [bounds; 2]).exit_on_esc(true);
@@ -190,11 +168,10 @@ fn main() {
         }
 
         if let Some(args) = e.update_args() {
-            let mut to_remove = Vec::<usize>::new();
-            // player_planet.update(&args);
             for planet in planets.iter_mut() {
                 planet.update(&args); // pass update args for 'dt' value to scale movement
-                                      //planet.check_collision(bounds); // println!("{:?}", planet.pos());
+                //planet.check_dist_from_centre(centre); // println!("{:?}", planet.pos());
+                planet.check_collision(bounds);
             }
             for i in 0..planets.len() {
                 for j in 0..planets.len() {
@@ -203,18 +180,10 @@ fn main() {
                         if (!is_colliding) {
                             planets[i].add_force(grav);
                         } else {
-                            // to_remove.push(i);
-                            // to_remove.push(j);
-                            // planets[i].colour = BLACK;
-                            // planets[j].colour = BLACK;
-                            // do something
+                        // todo handle collision
                         }
                     }
                 }
-            }
-            // clean up
-            for i in 0..to_remove.len() {
-                planets.remove(i);
             }
         }
 
