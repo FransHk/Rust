@@ -1,9 +1,13 @@
+use std::str::SplitTerminator;
+
 use glutin_window::GlutinWindow;
 use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::{EventLoop, EventSettings, Events};
 use piston::input::{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent};
 use piston::WindowSettings;
 use rand::Rng;
+use rand_distr::{Distribution, Normal};
+
 // Quick set of (unoptimised) array operations
 // used in this celestial body simulation
 mod utils;
@@ -14,7 +18,7 @@ type Colour = [f32; 4];
 const BLUE: Colour = [0.0, 0.0, 1.0, 1.0];
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
-const GRAV_CONST: f64 = 5.0;
+const GRAV_CONST: f64 = 2.0;
 
 /// This object represents a celestial body along
 /// with its properties like pos, vel and acceleration
@@ -29,6 +33,36 @@ struct Planet {
     mass: f64,
 }
 
+#[derive(Debug)]
+struct UniverseConstants {
+    lower_pos_bound: f64,
+    upper_pos_bound: f64,
+    velocity_bound: f64,
+    mass_mean: f64,
+    mass_std: f64,
+    mass_to_size: f64,
+}
+
+impl UniverseConstants {
+    fn new(
+        lower_pos_bound: f64,
+        upper_pos_bound: f64,
+        velocity_bound: f64,
+        mass_mean: f64,
+        mass_std: f64,
+        mass_to_size: f64,
+    ) -> UniverseConstants {
+        UniverseConstants {
+            lower_pos_bound,
+            upper_pos_bound,
+            velocity_bound,
+            mass_mean,
+            mass_std,
+            mass_to_size,
+        }
+    }
+}
+
 impl CelestialBody for Planet {
     fn mass(&self) -> f64 {
         self.mass
@@ -39,38 +73,33 @@ impl CelestialBody for Planet {
 }
 
 impl Planet {
-    // TODO let it take a size enum (large, med, small) 
+    // TODO let it take a size enum (large, med, small)
     // to initialise either (e.g. make it a multiplier for size, mass..)
-    fn new(bounds: f64, id: u32, colour: Colour) -> Planet{
+    // also pass in 'universal bounds'  like max vel, min vel..
+    fn new(planet_const: &UniverseConstants, id: u32, colour: Colour) -> Planet {
         let mut rng = rand::thread_rng();
-        let lower_bound = 0.0;
-        let upper_bound = bounds;
-        let vel_bound = 10.0;
-        let mass_lower = 0.1;
-        let mass_upper = 4.0;
+        let x = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
+        let y = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
+        let vel_x = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
+        let vel_y = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
 
-        let random_x = rng.gen_range(lower_bound..upper_bound);
-        let random_y = rng.gen_range(lower_bound..upper_bound);
-        let vel_x = rng.gen_range(-vel_bound..vel_bound);
-        let vel_y = rng.gen_range(-vel_bound..vel_bound);
-        let mass: f64 = rng.gen_range(mass_lower..mass_upper);
-
-        let pos: [f64; 2] = [random_x, random_y];
+        let pos: [f64; 2] = [x, y];
         let vel: [f64; 2] = [vel_x, vel_y];
+        let normal = Normal::new(planet_const.mass_mean, planet_const.mass_std).unwrap();
+        let mass = normal.sample(&mut rand::thread_rng());
 
-        Planet { 
-            id: id,
-            colour: colour,
+        Planet {
+            id,
+            colour,
             position: pos,
-            velocity: vel, 
-            acceleration: [0.0, 0.0], // TODO consider removing?
-            size: [mass * 0.5, mass * 0.5], // TODO set this to self.ratio
-            mass: mass,
+            velocity: vel,
+            acceleration: [0.0, 0.0],
+            mass,
+            size: [
+                mass * planet_const.mass_to_size,
+                mass * planet_const.mass_to_size,
+            ],
         }
-    }
-
-    fn reset_pos(&self) {
-        // TODO implement this method
     }
 
     fn add_force(&mut self, force: [f64; 2]) {
@@ -98,11 +127,10 @@ impl Planet {
         ];
         graphics::Rectangle::new(self.colour).draw(pos, &c.draw_state, c.transform, g);
     }
-    fn check_dist_from_centre(&mut self, centre: [f64; 2]){
+    fn check_dist_from_centre(&mut self, centre: [f64; 2]) {
         let dist = al::subtract_arrays(self.pos(), centre);
-        let dist_len= al::get_length(dist); 
-        if(dist_len > 500.0){
-        }
+        let dist_len = al::get_length(dist);
+        // todo make it do a re-entry
     }
 
     /// Simply checks for border collisions, turns
@@ -126,26 +154,29 @@ impl Planet {
             self.acceleration[1] *= -1.0;
         }
     }
-    
 }
 
-fn create_planets(amt: u32, bounds: f64) -> Vec<Planet> {
+fn create_planets(amt_planet: u32, amt_sun: u32, bounds: f64) -> Vec<Planet> {
     //(Planet, Vec<Planet>) {
     let mut planets = Vec::<Planet>::new();
-    for i in 0..amt {
-        planets.push(Planet::new(bounds, i, WHITE));
+    let planet_const = UniverseConstants::new(0.0, bounds, 40.0, 1.0, 10.0, 0.2);
+    for i in 0..amt_planet {
+        planets.push(Planet::new(&planet_const, i, WHITE));
     }
-    
 
+    let planet_const = UniverseConstants::new(0.0, bounds, 0.5, 200.0, 100.0, 0.2);
+    for i in 0..amt_sun {
+        planets.push(Planet::new(&planet_const, i, WHITE));
+    }
     planets
 }
 
 fn main() {
     //let mut planet = Planet::new();
     //let (mut plan, mut other_plan) = create_planets(0);
-    let bounds: f64 = 1024.0; // essentially the window size
+    let bounds: f64 = 1028.0; // essentially the window size
     let centre: [f64; 2] = [bounds * 0.5, bounds * 0.5];
-    let mut planets = create_planets(40, bounds);
+    let mut planets = create_planets(30, 1, bounds);
 
     let opengl = OpenGL::V3_2;
     let settings = WindowSettings::new("Window", [bounds; 2]).exit_on_esc(true);
@@ -174,8 +205,8 @@ fn main() {
         if let Some(args) = e.update_args() {
             for planet in planets.iter_mut() {
                 planet.update(&args); // pass update args for 'dt' value to scale movement
-                //planet.check_dist_from_centre(centre); // println!("{:?}", planet.pos());
-                planet.check_collision(bounds);
+                planet.check_dist_from_centre(centre); // println!("{:?}", planet.pos());
+                                                       //planet.check_collision(bounds);
             }
             for i in 0..planets.len() {
                 for j in 0..planets.len() {
@@ -184,7 +215,7 @@ fn main() {
                         if (!is_colliding) {
                             planets[i].add_force(grav);
                         } else {
-                        // todo handle collision
+                            // todo handle collision
                         }
                     }
                 }
