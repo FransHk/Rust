@@ -7,22 +7,8 @@ use rand::Rng;
 use rand_distr::{Distribution, Normal};
 
 impl Planet {
-    fn init_planet(planet_const: &PlanetConfig) -> ([f64; 2], [f64; 2], f64) {
-        let mut rng = rand::thread_rng();
-        let x = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
-        let y = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
-        let vel_x = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
-        let vel_y = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
-        let pos: [f64; 2] = [x, y];
-        let vel: [f64; 2] = [vel_x, vel_y];
-        let normal = Normal::new(planet_const.mass_mean, planet_const.mass_std).unwrap();
-        let mass = normal.sample(&mut rng);
-
-        (pos, vel, mass)
-    }
-
     pub fn new(planet_const: &PlanetConfig, id: u32, colour: Colour) -> Planet {
-        let (pos, vel, mass) = Planet::init_planet(planet_const);
+        let (pos, vel, mass) = Planet::configure_planet(planet_const);
 
         Planet {
             id,
@@ -38,11 +24,23 @@ impl Planet {
             config: planet_const.clone(),
         }
     }
+    fn configure_planet(planet_const: &PlanetConfig) -> ([f64; 2], [f64; 2], f64) {
+        let mut rng = rand::thread_rng();
+        let x = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
+        let y = rng.gen_range(planet_const.lower_pos_bound..planet_const.upper_pos_bound);
+        let vel_x = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
+        let vel_y = rng.gen_range(-planet_const.velocity_bound..planet_const.velocity_bound);
+        let pos: [f64; 2] = [x, y];
+        let vel: [f64; 2] = [vel_x, vel_y];
+        let normal = Normal::new(planet_const.mass_mean, planet_const.mass_std).unwrap();
+        let mass = normal.sample(&mut rng);
 
+        (pos, vel, mass)
+    }
     // Reset the planet by obtaining a new
     // set of pos, vel, mass, size bearings
     fn reset_planet(&mut self) {
-        let (pos, vel, mass) = Planet::init_planet(&self.config);
+        let (pos, vel, mass) = Planet::configure_planet(&self.config);
         self.position = pos;
         self.velocity = vel;
         self.mass = mass;
@@ -52,9 +50,12 @@ impl Planet {
         ];
     }
 
-    // Add 2D force to this body
+    /// Adds a 2-dimensional force to the body,
+    /// it is scaled by the body's mass before being
+    /// applied
     pub fn add_force(&mut self, force: [f64; 2]) {
-        self.velocity = al::add_arrays(self.velocity, force);
+        let scaled_force = al::scalar_mult(force, 1.0 / self.mass); // i.e. force/self.mass
+        self.velocity = al::add_arrays(self.velocity, scaled_force);
     }
 
     /// Perform step-wise updates to velocity and position
