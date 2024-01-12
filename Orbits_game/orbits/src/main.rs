@@ -13,6 +13,7 @@ use utils::physics::grav_force;
 
 const WHITE: Colour = [1.0; 4];
 const BLACK: Colour = [0.0, 0.0, 0.0, 1.0];
+const RED: Colour = [1.0, 0.0, 0.0, 1.0];
 const GRAV_CONST: f64 = 2.0;
 
 // Some constants used throughout the code
@@ -21,11 +22,14 @@ const GRAV_CONST: f64 = 2.0;
 fn create_planets(amt_planet: u32, bounds: f64) -> Vec<Planet> {
     //(Planet, Vec<Planet>) {
     let mut planets = Vec::<Planet>::new();
-    let planet_const = PlanetConfig::new(0.0, bounds, 1.3, 5.0, 10.0, 0.2);
+    let planet_const = PlanetConfig::new(0.0, bounds, 0.5, 4.0, 5.0, 0.2);
     for i in 0..amt_planet {
         planets.push(Planet::new(&planet_const, i, WHITE));
     }
-
+    let planet_const = PlanetConfig::new(0.0, bounds, 0.3, 500.0, 5.0, 0.01);
+    for i in 0..4 {
+        planets.push(Planet::new(&planet_const, i, RED));
+    }
     planets
 }
 
@@ -33,7 +37,7 @@ fn main() {
     // SET UP THE MAIN CONFIG DATA
     let bounds: f64 = 1028.0; // window size
     let centre: [f64; 2] = [bounds * 0.5, bounds * 0.5];
-    let mut planets = create_planets(100, bounds);
+    let mut planets = create_planets(30, bounds);
 
     let opengl = OpenGL::V3_2;
     let settings = WindowSettings::new("Window", [bounds; 2]).exit_on_esc(true);
