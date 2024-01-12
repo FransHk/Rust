@@ -30,9 +30,7 @@ fn create_planets(amt_planet: u32, bounds: f64) -> Vec<Planet> {
 }
 
 fn main() {
-    //let mut planet = Planet::new();
-    //let (mut plan, mut other_plan) = create_planets(0);
-    let bounds: f64 = 1028.0; // essentially the window size
+    let bounds: f64 = 1028.0; // window size
     let centre: [f64; 2] = [bounds * 0.5, bounds * 0.5];
     let mut planets = create_planets(30, bounds);
 
@@ -46,25 +44,16 @@ fn main() {
     // then, update each planet's position and check
     // for collisions.
     while let Some(e) = events.next(&mut window) {
-        // let player_planet: &mut Planet = &mut plan;
-        // let other_planets = &mut other_plan;
-
-        if let Some(r) = e.render_args() {
-            gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
-                graphics::clear(BLACK, g);
-
-                // player_planet.draw(c, g);
-                for planet in planets.iter() {
-                    planet.draw(c, g);
-                }
-            });
-        }
-
+        // Update step, each planet moves by its vel
+        // scaled by dt for a frame-independent movement
         if let Some(args) = e.update_args() {
+            // Handle step-wise update of each planet
             for planet in planets.iter_mut() {
                 planet.update(&args); // pass update args for 'dt' value to scale movement
-                planet.check_dist_from_centre(centre); // println!("{:?}", planet.pos());
+                planet.check_dist_from_centre(centre);
             }
+
+            // Handle gravitational force for each planet pair
             for i in 0..planets.len() {
                 for j in 0..planets.len() {
                     if i != j {
@@ -73,10 +62,20 @@ fn main() {
                         if !is_colliding {
                             planets[i].add_force(force);
                         } else {
-                            // todo handle collision
+                            // TODO consider handling collisions more spectacularly
                         }
                     }
                 }
+            }
+
+            // Render step, all planetary bodies
+            if let Some(r) = e.render_args() {
+                gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
+                    graphics::clear(BLACK, g);
+                    for planet in planets.iter() {
+                        planet.draw(c, g);
+                    }
+                });
             }
         }
     }

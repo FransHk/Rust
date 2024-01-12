@@ -1,3 +1,6 @@
+/// Configuration that contains all planet
+/// bounds that it must adhere to when randomly
+/// generated
 #[derive(Debug, Clone)]
 pub struct PlanetConfig {
     pub lower_pos_bound: f64,
@@ -27,6 +30,8 @@ impl PlanetConfig {
         }
     }
 }
+
+/// Trait for all bodies that have mass and a position
 pub trait CelestialBody {
     fn mass(&self) -> f64;
     fn pos(&self) -> [f64; 2];

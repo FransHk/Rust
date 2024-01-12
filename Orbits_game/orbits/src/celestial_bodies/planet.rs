@@ -1,7 +1,7 @@
 use super::body_config::*;
 use crate::utils::array_logic as al;
 use crate::utils::colour::Colour;
-use opengl_graphics::{GlGraphics, OpenGL};
+use opengl_graphics::GlGraphics;
 use piston::input::UpdateArgs;
 use rand::Rng;
 use rand_distr::{Distribution, Normal};
@@ -78,6 +78,9 @@ impl Planet {
         ];
         graphics::Rectangle::new(self.colour).draw(pos, &c.draw_state, c.transform, g);
     }
+
+    /// Asserts distance from center, if out bounds,
+    /// reset planet's pos, vel, etc.
     pub fn check_dist_from_centre(&mut self, centre: [f64; 2]) {
         let dist = al::subtract_arrays(self.pos(), centre);
         let dist_len = al::get_length(dist);
@@ -87,8 +90,8 @@ impl Planet {
         }
     }
 
-    /// Simply checks for border collisions, turns
-    /// body around on collision (bouncy balls)
+    /// Checks for border collisions, turns
+    /// body around on collision
     pub fn check_collision(&mut self, bounds: f64) {
         if (self.position[0] + self.size[0] >= bounds) {
             self.velocity[0] *= -1.0;

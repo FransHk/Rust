@@ -1,11 +1,12 @@
 use super::array_logic::{dot_product, get_length, normalise_vector, scalar_mult, subtract_arrays};
 use crate::celestial_bodies::body_config::CelestialBody;
 
-// Takes two structs that implement the CelestialBody trait
-// this means that they:
-// - Have mass
-// - Have pos
-// Calculate the gravitational force between two bodies
+/// Calculate the gravitational force between two bodies,
+/// takes two structs that implement the CelestialBody trait
+/// this means that the body:
+/// - Has mass
+/// - Has pos
+///
 pub fn grav_force<C: CelestialBody>(mass1: &C, mass2: &C, g: f64) -> ([f64; 2], bool) {
     let dist = subtract_arrays(mass1.pos(), mass2.pos());
     let dist_length = get_length(dist);
