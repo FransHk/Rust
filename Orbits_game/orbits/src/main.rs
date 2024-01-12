@@ -46,7 +46,6 @@ fn main() {
     // for collisions.
     while let Some(e) = events.next(&mut window) {
         // Render step, all planetary bodies
-        //
         if let Some(r) = e.render_args() {
             gl.draw(r.viewport(), |c: graphics::Context, g: &mut GlGraphics| {
                 graphics::clear(BLACK, g);
@@ -69,7 +68,6 @@ fn main() {
             // Handle gravitational force for unique planet pair
             // e.g. for 5 planets we have 5+4+3+2+1=15 force calcs
             for i in 0..planets.len() {
-                // e.g. i = 1
                 for j in bottom..planets.len() {
                     if i != j {
                         // Obtain force, it is always equal and opposite,
