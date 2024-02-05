@@ -44,11 +44,6 @@ impl Planet {
         let (pos, vel, mass) = Planet::configure_planet(&self.config);
         self.position = pos;
         self.velocity = vel;
-        // self.mass = mass;
-        // self.size = [
-        //     mass * self.config.mass_to_size,
-        //     mass * self.config.mass_to_size,
-        // ];
     }
 
     /// Adds a 2-dimensional force to the body,
