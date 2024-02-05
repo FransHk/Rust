@@ -22,11 +22,11 @@ const GRAV_CONST: f64 = 1.0;
 fn create_planets(amt_planet: u32, bounds: f64) -> Vec<Planet> {
     //(Planet, Vec<Planet>) {
     let mut planets = Vec::<Planet>::new();
-    let planet_const = PlanetConfig::new(0.0, bounds, 25.0, 10.0, 5.0, 0.2);
+    let planet_const = PlanetConfig::new(0.0, bounds, 50.0, 10.0, 5.0, 0.2);
     for i in 0..amt_planet {
         planets.push(Planet::new(&planet_const, i, WHITE));
     }
-    let planet_const = PlanetConfig::new(0.45 * bounds, bounds * 0.55, 0.2, 7000.0, 5.0, 0.001);
+    let planet_const = PlanetConfig::new(bounds * 0.45, bounds * 0.55, 0.001, 7000.0, 5.0, 0.001);
     for i in 0..1 {
         planets.push(Planet::new(&planet_const, i, RED));
     }
@@ -38,7 +38,7 @@ fn main() {
     // SET UP THE MAIN CONFIG DATA
     let bounds: f64 = 1028.0; // window size
     let centre: [f64; 2] = [bounds * 0.5, bounds * 0.5];
-    let mut planets = create_planets(10, bounds);
+    let mut planets = create_planets(15, bounds);
 
     let opengl = OpenGL::V3_2;
     let settings = WindowSettings::new("Window", [bounds; 2]).exit_on_esc(true);
