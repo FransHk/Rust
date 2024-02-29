@@ -1,0 +1,6 @@
+{
+    "min_card": 2,
+    "max_card": 14,
+    "player_num": 8,
+    "agent_turn_delay": 2000
+}
