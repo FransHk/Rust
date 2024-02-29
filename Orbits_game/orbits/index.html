@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAssembly Example</title>
+</head>
+
+<body>
+    <h1>WebAssembly Simple Example</h1>
+    <script>
+        (async () => {
+            try {
+                // Fetch the .wasm file
+                const response = await fetch('orbits.wasm');
+                const bytes = await response.arrayBuffer();
+
+                // Compile and instantiate the module
+                const { instance } = await WebAssembly.instantiate(bytes);
+
+                // Now you can call exported functions, for example:
+                // instance.exports.yourFunction();
+
+            } catch (err) {
+                console.error('Loading Wasm module failed:', err);
+            }
+        })();
+    </script>
+</body>
+
+</html>
