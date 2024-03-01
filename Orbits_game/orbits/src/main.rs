@@ -10,7 +10,7 @@ const WHITE: Colour = [1.0; 4];
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0., 0., 0.15)))
+        .insert_resource(ClearColor(Color::rgb(0., 0., 0.05)))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
         .add_systems(Update, sprite_movement)
@@ -36,9 +36,9 @@ fn gen_sprite(
     sprite
 }
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let planet_const = PlanetConfig::new(-400., 400.0, 50.0, 10.0, 5.0, 0.005);
+    let planet_const = PlanetConfig::new(-400., 400.0, 50.0, 10.0, 3.0, 0.001);
     let mut rng = rand::thread_rng();
-    let sun_const = PlanetConfig::new(-150., 150.0, 0.001, 7000.0, 5.0, 0.00005);
+    let sun_const = PlanetConfig::new(-150., 150.0, 0.001, 7000.0, 5.0, 0.00002);
     let planet_amt = 5;
     let paths = vec![
         "earth.png".to_owned(),
