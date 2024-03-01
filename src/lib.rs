@@ -64,7 +64,6 @@ fn sprite_movement(time: Res<Time>, mut planets: Query<(Entity, &mut Planet, &mu
     let mut entity_ids: Vec<Entity> = Vec::new();
     for (e, mut planet, mut transform) in &mut planets {
         planet.update(time.delta_seconds());
-
         transform.translation.x = planet.position[0];
         transform.translation.y = planet.position[1];
         planet.check_dist_from_centre([0.0, 0.0]);
