@@ -3,13 +3,14 @@ mod celestial_bodies;
 mod utils;
 use celestial_bodies::body_config::*;
 use celestial_bodies::planet::Planet;
+use rand::Rng;
 use utils::colour::Colour;
 use utils::physics::grav_force;
-
 const WHITE: Colour = [1.0; 4];
 
 fn main() {
     App::new()
+        .insert_resource(ClearColor(Color::rgb(0., 0., 0.15)))
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
         .add_systems(Update, sprite_movement)
@@ -35,28 +36,30 @@ fn gen_sprite(
     sprite
 }
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let planet_const = PlanetConfig::new(0.0, 300.0, 50.0, 10.0, 5.0, 0.01);
-    let sun_const = PlanetConfig::new(-150., 150.0, 0.001, 7000.0, 5.0, 0.0001);
+    let planet_const = PlanetConfig::new(-400., 400.0, 50.0, 10.0, 5.0, 0.005);
+    let mut rng = rand::thread_rng();
+    let sun_const = PlanetConfig::new(-150., 150.0, 0.001, 7000.0, 5.0, 0.00005);
     let planet_amt = 5;
-    // let sprite_sun = SpriteBundle {
-    //     texture: asset_server.load("cat-modified.png"),
-    //     transform: Transform {
-    //         scale: Vec3::new(0.2, 0.2, 0.2),
-    //         translation: Vec3::new(0.0, 0.0, 0.0),
-    //         rotation: Quat::IDENTITY,
-    //         ..default()
-    //     },
-    //     ..default()
-    // };
+    let paths = vec![
+        "earth.png".to_owned(),
+        "jupiter.png".to_owned(),
+        "moon.png".to_owned(),
+        "red.png".to_owned(),
+        "venus.png".to_owned(),
+        "water.png".to_owned(),
+    ];
     commands.spawn(Camera2dBundle::default());
+
     for i in 0..planet_amt {
+        let rand_sprite_index = rng.gen_range(0..paths.len());
+        let sprite = &paths[rand_sprite_index];
         let planet = Planet::new(&planet_const, i);
-        let sprite = gen_sprite(&planet, &asset_server, "cat-modified.png".to_string());
+        let sprite = gen_sprite(&planet, &asset_server, sprite.to_string());
         commands.spawn((planet.clone(), sprite.clone()));
     }
 
     let sun = Planet::new(&sun_const, planet_amt);
-    let sprite = gen_sprite(&sun, &asset_server, "sun.png".to_string());
+    let sprite = gen_sprite(&sun, &asset_server, "moon.png".to_string());
     commands.spawn((sun.clone(), sprite.clone()));
 }
 
